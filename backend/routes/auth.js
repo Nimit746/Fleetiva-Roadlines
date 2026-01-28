@@ -7,43 +7,46 @@ const User = require("../models/User");
 const router = express.Router();
 
 /* ================= REGISTER (OTP DISABLED) ================= */
-const { fullName, phone, password, role, companyName } = req.body;
-
-if (!password) {
-  return res.status(400).json({
-    message: "Password is required",
-  });
-}
-console.log("REGISTER BODY:", req.body);
-
 router.post("/register", async (req, res) => {
   try {
     const { name, phone, password, role, companyName } = req.body;
 
-    const exists = await User.findOne({ phone });
-    if (exists) return res.status(400).json({ message: "User already exists" });
+    console.log("REGISTER BODY:", req.body);
 
-    const hashed = await bcrypt.hash(password, 10);
+    if (!name || !phone || !password) {
+      return res.status(400).json({
+        message: "Name, phone and password are required",
+      });
+    }
+
+    const exists = await User.findOne({ phone });
+    if (exists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name,
       phone,
-      password: hashed,
+      password: hashedPassword,
       role,
       companyName,
-      isVerified: true, // OTP disabled
+      isVerified: true,
       provider: "local",
     });
 
-    res.json({ message: "Registered successfully" });
+    res.status(201).json({
+      message: "Registered successfully",
+      userId: user._id,
+    });
   } catch (err) {
-  console.error("❌ REGISTER ERROR:", err);
-  res.status(500).json({
-    message: "Registration failed",
-    error: err.message,
-    stack: err.stack,
-  });
-}
+    console.error("❌ REGISTER ERROR:", err);
+    res.status(500).json({
+      message: "Registration failed",
+      error: err.message,
+    });
+  }
 });
 
 /* ================= LOGIN ================= */
@@ -79,7 +82,6 @@ router.post("/google", async (req, res) => {
 
   try {
     const decoded = await admin.auth().verifyIdToken(idToken);
-
     const { email, name, uid } = decoded;
 
     let user = await User.findOne({ googleId: uid });
@@ -90,7 +92,7 @@ router.post("/google", async (req, res) => {
         email,
         googleId: uid,
         role: "customer",
-        authProvider: "google",
+        provider: "google",
       });
     }
 
@@ -102,7 +104,6 @@ router.post("/google", async (req, res) => {
 
     res.json({ accessToken });
   } catch (err) {
-    console.error(err);
     res.status(401).json({ message: "Invalid Google token" });
   }
 });
