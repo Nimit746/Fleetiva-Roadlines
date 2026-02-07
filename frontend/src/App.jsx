@@ -6,8 +6,8 @@ import Navbar from "./components/Navbar";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import AdminDashboard from "./pages/AdminDashboard";
-// import CustomerDashboard from "./pages/customer/CustomerDashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import CustomerDashboard from "./pages/customer/CustomerDashboard";
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(AppContext);
