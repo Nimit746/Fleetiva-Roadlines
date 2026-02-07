@@ -55,7 +55,17 @@ cd Fleetiva-Roadlines
    ```bash
    git clone https://github.com/your-username/logistics-transport-system.git
    cd logistics-transport-system
-   ```
+ ```
+## 🧪 Verifying the Setup
+
+
+After starting both backend and frontend:
+
+- Open http://localhost:3000 in your browser
+- Ensure the frontend loads without errors
+- Check backend logs to confirm MongoDB is connected
+
+If the application loads successfully, the setup is complete 🎉
 
 2. **Backend Setup:**
    ```bash
