@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import { getApiBaseUrl } from "../api/baseUrl";
 
 export default function AdminDashboard() {
   const [loads, setLoads] = useState([]);
@@ -66,9 +67,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const API_BASE =
-    import.meta.env.VITE_API_BASE_URL ||
-    "https://fleetiva-roadlines.onrender.com/api";
+  const API_BASE = getApiBaseUrl();
 
   const downloadBilty = (id) =>
     window.open(
