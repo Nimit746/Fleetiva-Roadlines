@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const admin = require('firebase-admin');
 const User = require('../models/User');
+const LoginLog = require('../models/LoginLog');
 const { twilioClient, redisClient } = require('../config/clients');
 
 const router = express.Router();
@@ -28,6 +29,17 @@ const signToken = (user) =>
 const validatePassword = (password) => typeof password === 'string' && password.length >= 8;
 
 const firebaseReady = () => admin.apps && admin.apps.length > 0;
+
+const logLoginAttempt = ({ req, user, email, provider, status, reason }) =>
+  LoginLog.create({
+    user: user?._id,
+    email: email || user?.email,
+    provider,
+    status,
+    reason,
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+  }).catch(() => {});
 
 router.post('/register', async (req, res) => {
   const { name, email, phone, password, role = 'customer', companyName } = req.body;
@@ -80,21 +92,43 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
+    await logLoginAttempt({
+      req,
+      email,
+      provider: 'local',
+      status: 'failure',
+      reason: 'missing_credentials',
+    });
     return res.status(400).json({ message: 'Email and password are required.' });
   }
 
   const user = await User.findOne({ email });
   if (!user || !user.password) {
+    await logLoginAttempt({
+      req,
+      email,
+      provider: 'local',
+      status: 'failure',
+      reason: 'invalid_credentials',
+    });
     return res.status(401).json({ message: 'Invalid credentials.' });
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
+    await logLoginAttempt({
+      req,
+      user,
+      provider: 'local',
+      status: 'failure',
+      reason: 'invalid_credentials',
+    });
     return res.status(401).json({ message: 'Invalid credentials.' });
   }
 
   const accessToken = signToken(user);
   setAuthCookie(res, accessToken);
+  await logLoginAttempt({ req, user, provider: 'local', status: 'success' });
 
   res.json({
     accessToken,
@@ -112,9 +146,21 @@ router.post('/login', async (req, res) => {
 router.post('/firebase/login', async (req, res) => {
   const { idToken } = req.body;
   if (!idToken) {
+    await logLoginAttempt({
+      req,
+      provider: 'firebase',
+      status: 'failure',
+      reason: 'missing_token',
+    });
     return res.status(400).json({ message: 'Firebase ID token is required.' });
   }
   if (!firebaseReady()) {
+    await logLoginAttempt({
+      req,
+      provider: 'firebase',
+      status: 'failure',
+      reason: 'firebase_unavailable',
+    });
     return res.status(503).json({ message: 'Firebase authentication unavailable.' });
   }
 
@@ -136,6 +182,7 @@ router.post('/firebase/login', async (req, res) => {
 
   const accessToken = signToken(user);
   setAuthCookie(res, accessToken);
+  await logLoginAttempt({ req, user, provider: 'firebase', status: 'success' });
 
   res.json({
     accessToken,

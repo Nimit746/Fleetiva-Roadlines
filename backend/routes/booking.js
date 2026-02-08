@@ -4,6 +4,7 @@ const Load = require('../models/Load');
 const Truck = require('../models/Truck');
 const Bilty = require('../models/Bilty');
 const Payment = require('../models/Payment');
+const BillingRecord = require('../models/BillingRecord');
 const DriverAssignment = require('../models/DriverAssignment');
 const User = require('../models/User');
 const { authenticate, authorize } = require('../middleware/combinedAuth');
@@ -99,6 +100,23 @@ router.post('/create', authenticate, authorize('admin'), async (req, res) => {
     status: 'pending',
   });
 
+  await BillingRecord.create({
+    booking: booking._id,
+    customer: booking.customer,
+    driver: booking.driver,
+    truck: booking.truck,
+    load: booking.load,
+    lrNumber,
+    invoiceNumber: `INV-${booking._id.toString().slice(-6).toUpperCase()}`,
+    freightAmount,
+    gstAmount,
+    totalAmount: total,
+    advancePaid: advance,
+    balanceAmount,
+    paymentMode,
+    paymentStatus: booking.paymentStatus,
+  });
+
   await DriverAssignment.create({
     booking: booking._id,
     driver: truck.driver,
@@ -181,6 +199,12 @@ router.post('/:id/payment', authenticate, authorize('admin'), async (req, res) =
   await Payment.findOneAndUpdate(
     { booking: booking._id },
     { status, paidAt: status === 'paid' ? new Date() : null },
+    { new: true }
+  );
+
+  await BillingRecord.findOneAndUpdate(
+    { booking: booking._id },
+    { paymentStatus: status, paidAt: status === 'paid' ? new Date() : null },
     { new: true }
   );
 

@@ -195,6 +195,19 @@ export default function Login() {
         <p className="text-muted" style={{ textAlign: "center", marginTop: 8 }}>
           <Link to="/forgot-password">Forgot password?</Link>
         </p>
+
+        <div className="card" style={{ marginTop: 24 }}>
+          <h3 className="section-title" style={{ marginBottom: 8 }}>
+            Need help logging in?
+          </h3>
+          <p className="text-muted" style={{ marginBottom: 12 }}>
+            Contact the Fleetiva support team and we will help you regain access.
+          </p>
+          <div className="toolbar" style={{ flexWrap: "wrap", gap: 8 }}>
+            <span className="tag info">Phone: +91 98765 43210</span>
+            <span className="tag">Email: support@fleetiva.com</span>
+          </div>
+        </div>
       </div>
     </div>
   );

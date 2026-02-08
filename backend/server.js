@@ -100,6 +100,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/load', require('./routes/load'));
 app.use('/api/truck', require('./routes/truck'));
 app.use('/api/booking', require('./routes/booking'));
+app.use('/api/bilty', require('./routes/bilty'));
 app.use('/api/match', require('./routes/match'));
 app.use('/api/users', require('./routes/users'));
 
