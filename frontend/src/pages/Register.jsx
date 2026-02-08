@@ -38,7 +38,7 @@ export default function Register() {
     const credential = await createUserWithEmailAndPassword(
       auth,
       formData.email,
-      formData.password
+      formData.password,
     );
     const idToken = await credential.user.getIdToken();
     const response = await api.post("/auth/firebase/register", {
@@ -54,11 +54,42 @@ export default function Register() {
     return response.data.user.role;
   };
 
+  const validateRegisterForm = (data) => {
+    const { companyName, name, email, phone, password } = data;
+
+    if (!companyName || !name || !email || !phone || !password) {
+      return "All fields are required.";
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address.";
+    }
+
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(phone)) {
+      return "Please enter a valid 10-digit phone number.";
+    }
+
+    if (password.length < 6) {
+      return "Password must be at least 6 characters.";
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
 
     setError("");
+    const validationError = validateRegisterForm(formData);
+    if (validationError) {
+      setError(validationError);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -69,7 +100,14 @@ export default function Register() {
       else if (role === "driver") navigate("/driver", { replace: true });
       else navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || err.message || "Registration failed");
+      if (err.response) {
+        setError(
+          err.response.data?.message ||
+            "Registration service is currently unavailable. Please try again later.",
+        );
+      } else {
+        setError(err.message || "Registration failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -79,7 +117,10 @@ export default function Register() {
     <div className="auth-layout">
       <Helmet>
         <title>Register - Fleetiva Roadlines</title>
-        <meta name="description" content="Create a Fleetiva account to start shipping or hauling." />
+        <meta
+          name="description"
+          content="Create a Fleetiva account to start shipping or hauling."
+        />
       </Helmet>
       <div className="auth-card">
         <h2 className="page-title" style={{ textAlign: "center" }}>
@@ -91,7 +132,11 @@ export default function Register() {
 
         {error && <Toast message={error} />}
 
-        <form onSubmit={handleSubmit} className="form" style={{ marginTop: 24 }}>
+        <form
+          onSubmit={handleSubmit}
+          className="form"
+          style={{ marginTop: 24 }}
+        >
           <input
             placeholder="Company Name"
             className="input"
@@ -103,7 +148,6 @@ export default function Register() {
 
           <input
             placeholder="Full Name"
-            required
             className="input"
             aria-label="Full Name"
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -112,7 +156,6 @@ export default function Register() {
           <input
             type="email"
             placeholder="Email"
-            required
             className="input"
             aria-label="Email Address"
             onChange={(e) =>
@@ -122,16 +165,16 @@ export default function Register() {
 
           <input
             placeholder="Phone Number"
-            required
             className="input"
             aria-label="Phone Number"
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, phone: e.target.value })
+            }
           />
 
           <input
             type="password"
             placeholder="Password"
-            required
             className="input"
             aria-label="Password"
             onChange={(e) =>
@@ -155,7 +198,10 @@ export default function Register() {
           </button>
         </form>
 
-        <p className="text-muted" style={{ textAlign: "center", marginTop: 20 }}>
+        <p
+          className="text-muted"
+          style={{ textAlign: "center", marginTop: 20 }}
+        >
           Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>

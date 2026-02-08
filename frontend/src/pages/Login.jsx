@@ -36,11 +36,35 @@ export default function Login() {
     return err?.message || "Login failed";
   };
 
+  const validateLoginForm = ({ email, password }) => {
+    if (!email || !password) {
+      return "Email and password are required.";
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address.";
+    }
+
+    if (password.length < 6) {
+      return "Password must be at least 6 characters.";
+    }
+
+    return null;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (loading) return;
 
     setError("");
+    const validationError = validateLoginForm(formData);
+    if (validationError) {
+      setError(validationError);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -52,7 +76,7 @@ export default function Login() {
         const credential = await signInWithEmailAndPassword(
           auth,
           formData.email,
-          formData.password
+          formData.password,
         );
         const idToken = await credential.user.getIdToken();
         role = await exchangeFirebaseToken(idToken);
@@ -68,7 +92,14 @@ export default function Login() {
       else if (role === "driver") navigate("/driver", { replace: true });
       else navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || formatFirebaseError(err));
+      if (err.response) {
+        setError(
+          err.response.data?.message ||
+            "Login service is currently unavailable. Please try again later.",
+        );
+      } else {
+        setError(formatFirebaseError(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -102,7 +133,10 @@ export default function Login() {
     <div className="auth-layout">
       <Helmet>
         <title>Login - Fleetiva Roadlines</title>
-        <meta name="description" content="Login to your Fleetiva account to manage shipments and fleets." />
+        <meta
+          name="description"
+          content="Login to your Fleetiva account to manage shipments and fleets."
+        />
       </Helmet>
       <div className="auth-card">
         <h2 className="page-title" style={{ textAlign: "center" }}>
@@ -118,7 +152,6 @@ export default function Login() {
           <input
             type="email"
             placeholder="Email"
-            required
             className="input"
             aria-label="Email Address"
             value={formData.email}
@@ -130,7 +163,6 @@ export default function Login() {
           <input
             type="password"
             placeholder="Password"
-            required
             className="input"
             aria-label="Password"
             value={formData.password}
@@ -154,7 +186,10 @@ export default function Login() {
           )}
         </form>
 
-        <p className="text-muted" style={{ textAlign: "center", marginTop: 20 }}>
+        <p
+          className="text-muted"
+          style={{ textAlign: "center", marginTop: 20 }}
+        >
           Don’t have an account? <Link to="/register">Register</Link>
         </p>
         <p className="text-muted" style={{ textAlign: "center", marginTop: 8 }}>
