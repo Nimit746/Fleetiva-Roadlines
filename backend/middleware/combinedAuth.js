@@ -1,5 +1,9 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const jwt = require('jsonwebtoken');
+
+const extractToken = (req) =>
+  req.cookies?.accessToken ||
+  req.headers.authorization?.split(' ')[1] ||
+  req.query?.token;
 
 let admin = null;
 
@@ -17,13 +21,10 @@ try {
 
 exports.authenticate = async (req, res, next) => {
   try {
-    // First, try JWT verification
-    const authHeader = req.headers['authorization'];
-    let token = authHeader && authHeader.split(' ')[1];
+    const token = extractToken(req);
 
-    // Support token in query for PDF downloads via window.open
-    if (!token && req.query.token) {
-      token = req.query.token;
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized' });
     }
 
     if (token) {
@@ -62,9 +63,16 @@ exports.authenticate = async (req, res, next) => {
     // If both failed
     return res.status(401).json({ message: "Unauthorized" });
   } catch (err) {
-    console.error("Authentication error:", err);
-    return res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({ message: 'Invalid token' });
   }
+};
+
+exports.authorize = (...roles) => (req, res, next) => {
+  const currentRole = req.user?.role;
+  if (!currentRole || (roles.length && !roles.includes(currentRole))) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+  return next();
 };
 
 exports.authorize = (roles = []) => {
