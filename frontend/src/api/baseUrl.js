@@ -15,6 +15,7 @@ export const getApiBaseUrl = () => {
 
   // Fallback behavior:
   // In development, default to local backend to avoid accidental production usage.
+
   if (import.meta.env.DEV) {
     return "http://localhost:5000/api";
   }
@@ -29,4 +30,5 @@ export const getApiBaseUrl = () => {
   throw new Error(
     "VITE_API_BASE_URL is not set. It must be set in Vercel or your environment."
   );
+
 };
